@@ -1,0 +1,91 @@
+version: '3.7'
+    
+services:
+    kong:
+        image: kong:${KONG_VERSION:-latest}
+        container_name: kong
+        restart: always
+        environment:
+            - TZ=${TZ:-Asia/Bangkok}
+            - KONG_DATABASE=off
+            - KONG_ADMIN_LISTEN=${KONG_ADMIN_LISTEN:-127.0.0.1:8001}
+            - KONG_PROXY_LISTEN=${KONG_PROXY_LISTEN:-0.0.0.0:8000, 0.0.0.0:8443 ssl http2}
+            - KONG_NGINX_HTTP_RESOLVER=${KONG_NGINX_HTTP_RESOLVER:-8.8.8.8}
+            - KONG_PROXY_ERROR_LOG=/dev/stderr
+            - KONG_ADMIN_ERROR_LOG=/dev/stderr
+            - KONG_TRUSTED_IPS=0.0.0.0/0,::/0
+            - KONG_REAL_IP_RECURSIVE=on
+            - KONG_DECLARATIVE_CONFIG=/etc/kong/kong.yml
+        ports:
+            - 80:8000
+            - 443:8443
+            - 127.0.0.1:8001:8001
+            
+        volumes:
+            - ./conf/kong.yml:/etc/kong/kong.yml
+            
+        healthcheck:
+            test: ["CMD","kong","health"]
+            interval: 5s
+            timeout: 2s
+            retries: 15
+
+    db: 
+        image: mariadb
+        container_name: db
+        restart: always
+        environment: 
+            - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+            - MYSQL_DATABASE=${MYSQL_DATABASE}
+            - MYSQL_USER=${MYSQL_USER}
+            - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+        volumes:
+            - ./mysql_data:/var/lib/mysql
+            
+    wp1:
+        image: wordpress:fpm-alpine
+        container_name: wp1
+        restart: always
+        environment:
+            - WORDPRESS_DB_HOST=db
+            - WORDPRESS_DB_USER=${WORDPRESS_DB_USER}
+            - WORDPRESS_DB_PASSWORD=${WORDPRESS_DB_PASSWORD}
+            - WORDPRESS_DB_NAME=${WORDPRESS_DB_NAME}
+        volumes:
+            - ./html:/var/www/html
+            
+            
+    wp2:
+        image: wordpress:fpm-alpine
+        container_name: wp2
+        restart: always
+        environment:
+            - WORDPRESS_DB_HOST=db
+            - WORDPRESS_DB_USER=${WORDPRESS_DB_USER}
+            - WORDPRESS_DB_PASSWORD=${WORDPRESS_DB_PASSWORD}
+            - WORDPRESS_DB_NAME=${WORDPRESS_DB_NAME}
+        volumes:
+            - ./html:/var/www/html
+            
+            
+    proxy1:
+        image: openresty/openresty:alpine
+        container_name: proxy1
+        restart: always
+        volumes:
+            - ./html:/var/www/html
+            - ./conf.d.1:/etc/nginx/conf.d
+            
+    proxy2:
+        image: openresty/openresty:alpine
+        container_name: proxy2
+        restart: always
+        volumes:
+            - ./html:/var/www/html
+            - ./conf.d.2:/etc/nginx/conf.d
+            
+            
+    redis:
+        image: redis:alpine
+        container_name: redis
+        restart: always
