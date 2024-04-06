@@ -41,8 +41,7 @@ docker-compose up -d
 
 ```
 
-4. install plugin on Wordpress
-- Install plugin nginx-helper
+4. install nginx-helper plugin on Wordpress
 ```
 Enable Purge
 
