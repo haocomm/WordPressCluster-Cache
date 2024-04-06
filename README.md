@@ -40,3 +40,15 @@ certificates:
 docker-compose up -d 
 
 ```
+
+4. install plugin on Wordpress
+- Install plugin nginx-helper
+```
+Enable Purge
+
+Caching Method
+Redis cache
+Hostname: redis
+Port: 6379
+Prefix: nginx-cache:
+```
